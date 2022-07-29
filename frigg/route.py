@@ -3,7 +3,7 @@ from frigg import var
 
 @app.route('/')
 def hello_world():
-    return 'Hello World!\n'
+    return '<h1>Welcome to api.beardic.cn</h1>\n'
 
 
 @app.route('/get-dfs-commit/')
