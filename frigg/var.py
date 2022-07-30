@@ -4,6 +4,7 @@ import os
 var_dir = os.path.join(os.path.dirname(__file__), 'var')
 if not os.path.exists(var_dir):
     var_dir = os.path.join(os.path.dirname(__file__), 'var-example')
+var_dir = os.path.realpath(var_dir)
 
 
 def get_var(var_path: str):
