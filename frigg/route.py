@@ -1,3 +1,4 @@
+from flask import abort
 from frigg import app
 from frigg import var
 import logging
@@ -14,5 +15,9 @@ def get_var(var_path):
     if ret is not None:
         return ret
     else:
-        return "404 not found"
-    
+        abort(404)
+
+
+@app.errorhandler(404)
+def handle_404(error):
+    return "404 not found", 404
