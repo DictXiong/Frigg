@@ -1,5 +1,5 @@
 from flask import Flask, abort, request
-from frigg import var
+from frigg import data
 app = Flask(__name__)
 
 
@@ -10,7 +10,7 @@ def hello_world():
 
 @app.route('/get-var/<path:var_path>')
 def get_var(var_path):
-    ret = var.get_var(var_path)
+    ret = data.get_var(var_path)
     if ret is not None:
         return ret
     else:
@@ -20,6 +20,20 @@ def get_var(var_path):
 @app.route('/get-my-ip')
 def get_my_ip():
     return request.remote_addr
+
+
+@app.route('/write-log')
+def write_log():
+    hostname = request.args.get('hostname')
+    uuid = request.args.get('uuid')
+    if not data.auth_client(hostname, uuid):
+        abort(403)
+    return 'OK'
+
+
+@app.errorhandler(403)
+def handle_403(error):
+    return '403 forbidden', 403
 
 
 @app.errorhandler(404)
