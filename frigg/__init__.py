@@ -22,8 +22,8 @@ def get_my_ip():
     return request.remote_addr
 
 
-@app.route('/write-log')
-def write_log():
+@app.route('/post-log')
+def post_log():
     hostname = request.args.get('hostname')
     uuid = request.args.get('uuid')
     if not data.auth_client(hostname, uuid):
