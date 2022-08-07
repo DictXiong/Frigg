@@ -22,13 +22,16 @@ def get_my_ip():
     return request.remote_addr
 
 
-@app.route('/post-log')
+@app.route('/post-log', methods=['POST'])
 def post_log():
     hostname = request.args.get('hostname')
     uuid = request.args.get('uuid')
     if not data.auth_client(hostname, uuid):
         abort(403)
-    return 'OK'
+    content = str(request.data, encoding='utf8')
+    if content:
+        data.write_log(hostname, content)
+    return '200 ok', 200
 
 
 @app.errorhandler(403)
@@ -39,3 +42,8 @@ def handle_403(error):
 @app.errorhandler(404)
 def handle_404(error):
     return "404 not found", 404
+
+
+@app.errorhandler(405)
+def handle_405(error):
+    return "405 method not allowed", 404

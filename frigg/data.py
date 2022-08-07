@@ -36,12 +36,12 @@ def initialize():
     console_handler = logging.StreamHandler()
     console_handler.setLevel(logging.DEBUG)
     formatter = logging.Formatter(
-        '[%(asctime)s][%(filename)s:%(lineno)d][%(levelname)s] %(message)s')
+        '[%(asctime)s][%(filename)s:%(lineno)d]%(message)s')
     file_handler.setFormatter(formatter)
     console_handler.setFormatter(formatter)
     client_logger.addHandler(file_handler)
     client_logger.addHandler(console_handler)
-    client_logger.info('client logger initialized')
+    client_logger.info(' client logger initialized')
 
 initialize()
 
@@ -76,3 +76,7 @@ def auth_ip(hostname: str, ip: str):
         if ip in i:
             return True
     return False
+
+def write_log(hostname: str, content: str):
+    client_logger.info(f"<{hostname}> {content}")
+    return True

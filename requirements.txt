@@ -1,2 +1,3 @@
 uwsgi-plugin-python3
+pyyaml
 flask
