@@ -6,6 +6,7 @@ import os
 import ipaddress
 import logging
 import logging.handlers
+import csv
 import yaml
 
 
@@ -23,6 +24,13 @@ def init_var_dir(data_dir):
     if not os.path.exists(var_dir):
         os.makedirs(var_dir)
     return var_dir
+
+
+def init_csv_dir(data_dir):
+    csv_dir = os.path.join(data_dir, 'csv')
+    if not os.path.exists(csv_dir):
+        os.makedirs(csv_dir)
+    return csv_dir
 
 
 def init_config(data_dir):
@@ -82,6 +90,7 @@ def init_beacon_recorder(data_dir):
 
 data_dir = init_data_dir()
 var_dir = init_var_dir(data_dir)
+csv_dir = init_csv_dir(data_dir)
 config = init_config(data_dir)
 client_logger = init_client_logger(data_dir)
 beacon_logger = init_beacon_recorder(data_dir)
@@ -132,4 +141,20 @@ def write_beacon(hostname: str, beacon: str, ip: str):
     if beacon not in config['beacon']['types']:
         return False
     beacon_logger.info("[%s]::%s::[%s]", hostname, beacon, ip)
+    return True
+
+
+def append_csv(csv_name: str, data: dict):
+    csv_full_path = os.path.realpath(os.path.join(csv_dir, csv_name + '.csv'))
+    if not os.path.exists(csv_full_path) or not csv_full_path.startswith(csv_dir):
+        return False
+    field_names = []
+    with open(csv_full_path, 'r', encoding='utf8') as f:
+        field_names = csv.DictReader(f).fieldnames
+    with open(csv_full_path, 'a', encoding='utf8') as f:
+        dict_writer = csv.DictWriter(f, fieldnames=field_names)
+        try:
+            dict_writer.writerow(data)
+        except ValueError:
+            return False
     return True

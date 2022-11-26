@@ -56,6 +56,21 @@ def post_beacon():
     return api_return(200)
 
 
+@app.route('/post-data', methods=['POST'])
+def post_data():
+    hostname = request.args.get('hostname')
+    uuid = request.args.get('uuid')
+    table = request.args.get('table')
+    if hostname is None or uuid is None or table is None:
+        return api_return(400)
+    if not data.auth_client(hostname, uuid):
+        return api_return(403)
+    print(request.form)
+    if not data.append_csv(table, request.form):
+        return api_return(400)
+    return api_return(200)
+
+
 @app.errorhandler(HTTPException)
 def handle_exception(e):
     return f"{e.code} {e.name}", e.code
