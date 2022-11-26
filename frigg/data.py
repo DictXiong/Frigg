@@ -133,14 +133,14 @@ def auth_ip(hostname: str, ip: str):
 
 
 def write_log(hostname: str, content: str, ip: str):
-    client_logger.info("[%s]::%s::[%s]", hostname, content, ip)
+    client_logger.info("[%s]::%s (%s)", hostname, content, ip)
     return True
 
 
 def write_beacon(hostname: str, beacon: str, ip: str):
     if beacon not in config['beacon']['types']:
         return False
-    beacon_logger.info("[%s]::%s::[%s]", hostname, beacon, ip)
+    beacon_logger.info("[%s]::%s (%s)", hostname, beacon, ip)
     return True
 
 
