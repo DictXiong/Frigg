@@ -1,7 +1,0 @@
-clients:
-  server:
-    uuid: "123"
-    ip: "0.0.0.0/0"
-  pc:
-    uuid: "456"
-    ip: "0.0.0.0/0"

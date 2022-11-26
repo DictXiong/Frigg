@@ -1,11 +1,23 @@
-from flask import Flask, abort, request
+# pylint: disable=missing-module-docstring,missing-function-docstring,invalid-name,line-too-long
+
+from flask import Flask, abort, request, jsonify
+from werkzeug.exceptions import HTTPException
 from frigg import data
 app = Flask(__name__)
 
 
+def api_return(code: int) -> str:
+    desc = {
+        200: "OK",
+        400: "Wrong Arguments",
+        403: "Authentication Failed",
+    }
+    return jsonify({"status": code, "desc": desc[code]}), 200
+
+
 @app.route('/')
 def hello_world():
-    return '<h1>Welcome to api.beardic.cn</h1>\n'
+    return '<h1>Welcome to api.beardic.cn</h1>', 200
 
 
 @app.route('/get-var/<path:var_path>')
@@ -13,8 +25,7 @@ def get_var(var_path):
     ret = data.get_var(var_path)
     if ret is not None:
         return ret
-    else:
-        abort(404)
+    abort(404)
 
 
 @app.route('/get-my-ip')
@@ -26,24 +37,25 @@ def get_my_ip():
 def post_log():
     hostname = request.args.get('hostname')
     uuid = request.args.get('uuid')
+    if hostname is None or uuid is None:
+        return api_return(400)
     if not data.auth_client(hostname, uuid):
-        abort(403)
+        return api_return(403)
     content = str(request.data, encoding='utf8')
     if content:
-        data.write_log(hostname, content)
-    return '200 ok', 200
+        data.write_log(hostname, content, request.remote_addr)
+    return api_return(200)
 
 
-@app.errorhandler(403)
-def handle_403(error):
-    return '403 forbidden', 403
+@app.route('/post-beacon', methods=['POST'])
+def post_beacon():
+    hostname = request.args.get('hostname')
+    beacon = request.args.get('beacon')
+    if hostname is None or beacon is None or not data.write_beacon(hostname, beacon, request.remote_addr):
+        return api_return(400)
+    return api_return(200)
 
 
-@app.errorhandler(404)
-def handle_404(error):
-    return "404 not found", 404
-
-
-@app.errorhandler(405)
-def handle_405(error):
-    return "405 method not allowed", 404
+@app.errorhandler(HTTPException)
+def handle_exception(e):
+    return f"{e.code} {e.name}", e.code
