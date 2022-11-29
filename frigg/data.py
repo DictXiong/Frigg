@@ -109,7 +109,7 @@ def auth_client(hostname: str, uuid: str):
     auth the client by hostname and uuid.
     this can accept None-s normally
     """
-    return bool(hostname in config['auth']['clients'] and uuid == config['auth']['clients'][hostname]['uuid'])
+    return bool(hostname in config['auth']['clients'] and str(uuid).lower() == str(config['auth']['clients'][hostname]['uuid']).lower())
 
 
 def auth_ip(hostname: str, ip: str):
