@@ -137,10 +137,15 @@ def write_log(hostname: str, content: str, ip: str):
     return True
 
 
-def write_beacon(hostname: str, beacon: str, ip: str):
-    if beacon not in config['beacon']['types']:
+def write_beacon(hostname: str, beacon: str, meta:str|None, ip: str):
+    if beacon not in config['beacon']['types'] or len(hostname) > 64:
         return False
-    beacon_logger.info("[%s]::%s (%s)", hostname, beacon, ip)
+    if meta:
+        if len(meta) > 64:
+            return False
+        beacon_logger.info("[%s]::%s \"%s\" (%s)", hostname, beacon, meta, ip)
+    else:
+        beacon_logger.info("[%s]::%s (%s)", hostname, beacon, ip)
     return True
 
 

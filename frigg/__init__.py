@@ -51,7 +51,8 @@ def post_log():
 def post_beacon():
     hostname = request.args.get('hostname')
     beacon = request.args.get('beacon')
-    if hostname is None or beacon is None or not data.write_beacon(hostname, beacon, request.remote_addr):
+    meta = request.args.get('meta')
+    if hostname is None or beacon is None or not data.write_beacon(hostname, beacon, meta, request.remote_addr):
         return api_return(400)
     return api_return(200)
 
