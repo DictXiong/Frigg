@@ -12,10 +12,9 @@ class PushManager:
 
     def push_beacon(self, hostname: str, beacon: str, meta: str, ip: str):
         text = f"[Frigg] {hostname}::{beacon}"
+        desp = f"**IP:** {ip}"
         if meta:
-            desp = f"**Meta:** {meta} ({ip})"
-        else:
-            desp = f"**IP:** {ip}"
+            desp = f"**Meta:** {meta}; \n" + desp
         try:
             if self.type == "pushdeer":
                 self.pusher.send_markdown(text, desp=desp)

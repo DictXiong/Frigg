@@ -125,7 +125,7 @@ class DataManager:
         if beacon not in self.config['beacon']['types'] or len(hostname) > 64:
             return False
         if meta:
-            if len(meta) > 64:
+            if len(meta) > 512:
                 return False
             self.beacon_logger.info(
                 "[%s]::%s \"%s\" (%s)", hostname, beacon, meta, ip)
