@@ -2,8 +2,9 @@
 
 from flask import Flask, abort, request, jsonify
 from werkzeug.exceptions import HTTPException
-from frigg import data
+from frigg.data import DataManager
 app = Flask(__name__)
+data = DataManager(app.logger)
 
 
 def api_return(code: int) -> str:
