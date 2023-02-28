@@ -42,6 +42,7 @@ class DDNS:
                     updated = True
                     continue
                 dns_record_id = dns_record['id']
+                original_ip = dns_record['content']
                 dns_record = {
                     'name': name,
                     'type': ip_type,
@@ -56,7 +57,7 @@ class DDNS:
                     return False
                 self.logger.info('Record %s updated to %s' % (name, ip))
                 if self.pusher:
-                    self.pusher.push_dns_updated(name, ip)
+                    self.pusher.push_dns_updated(name, ip, original_ip)
                 updated = True
             if not updated:
                 dns_record = {
