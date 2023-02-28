@@ -28,7 +28,7 @@ class PushManager:
         text = f"## [Frigg] {hostname} DNS updated"
         desp = f"**IP:** {ip}"
         if original_ip:
-            desp += f"\n**Original IP:** {original_ip}"
+            desp += f"; \n**Original IP:** {original_ip}"
         try:
             if self.type == "pushdeer":
                 self.pusher.send_markdown(text, desp=desp)
