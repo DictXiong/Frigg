@@ -25,11 +25,10 @@ class PushManager:
             self.logger.error(f"pusher encountered an error: {e}")
 
     def push_dns_updated(self, hostname: str, ip: str, original_ip: str = None):
-        text = f"## [Frigg] {hostname} DNS updated to {ip}"
+        text = f"## [Frigg] {hostname} DNS updated"
+        desp = f"**IP:** {ip}"
         if original_ip:
-            desp = f"**Original IP:** {original_ip}"
-        else:
-            desp = None
+            desp += f"\n**Original IP:** {original_ip}"
         try:
             if self.type == "pushdeer":
                 self.pusher.send_markdown(text, desp=desp)
