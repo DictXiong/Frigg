@@ -9,7 +9,7 @@ from frigg.ddns import DDNS
 app = Flask(__name__)
 app.logger.setLevel(logging.INFO)
 data = DataManager(app.logger)
-ddns = DDNS(logger=app.logger,**(data.get_ddns_config()))
+ddns = DDNS(logger=app.logger, pusher=data.get_pusher(), **(data.get_ddns_config()))
 
 def api_return(code: int) -> str:
     desc = {

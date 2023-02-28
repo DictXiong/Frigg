@@ -3,9 +3,10 @@ import CloudFlare
 
 
 class DDNS:
-    def __init__(self, zone: str, token: str, logger):
+    def __init__(self, zone: str, token: str, logger, pusher=None):
         self.cf = CloudFlare.CloudFlare(token=token)
         self.logger = logger
+        self.pusher = pusher
         try:
             params = {'name': zone}
             zones = self.cf.zones.get(params=params)
@@ -54,6 +55,8 @@ class DDNS:
                     self.logger.error('Error: %s - api call failed' % (e))
                     return False
                 self.logger.info('Record %s updated to %s' % (name, ip))
+                if self.pusher:
+                    self.pusher.push_dns_updated(name, ip)
                 updated = True
             if not updated:
                 dns_record = {
@@ -69,4 +72,6 @@ class DDNS:
                     self.logger.error('Error: %s - api call failed' % (e))
                     return False
                 self.logger.info('Record %s created with %s' % (name, ip))
+                if self.pusher:
+                    self.pusher.push_dns_updated(name, ip)
         return True

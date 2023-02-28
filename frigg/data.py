@@ -154,3 +154,6 @@ class DataManager:
 
     def get_ddns_config(self):
         return self.config['ddns']
+
+    def get_pusher(self):
+        return self.pusher

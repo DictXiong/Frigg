@@ -23,3 +23,14 @@ class PushManager:
                     f"pusher {self.type} not implemented")
         except Exception as e:
             self.logger.error(f"pusher encountered an error: {e}")
+
+    def push_dns_updated(self, hostname: str, ip: str):
+        text = f"[Frigg] {hostname} DNS updated to {ip}"
+        try:
+            if self.type == "pushdeer":
+                self.pusher.send_markdown(text)
+            else:
+                raise NotImplementedError(
+                    f"pusher {self.type} not implemented")
+        except Exception as e:
+            self.logger.error(f"pusher encountered an error: {e}")
