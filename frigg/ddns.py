@@ -45,7 +45,8 @@ class DDNS:
                     'name': name,
                     'type': ip_type,
                     'content': ip,
-                    'proxied': False
+                    'proxied': False,
+                    'comment': 'Frigg DDNS'
                 }
                 try:
                     dns_record = self.cf.zones.dns_records.put(self.zone_id, dns_record_id, data=dns_record)
@@ -59,7 +60,8 @@ class DDNS:
                     'name': name,
                     'type': ip_type,
                     'content': ip,
-                    'proxied': False
+                    'proxied': False,
+                    'comment': 'Frigg DDNS'
                 }
                 try:
                     self.cf.zones.dns_records.post(self.zone_id, data=dns_record)
