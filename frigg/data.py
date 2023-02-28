@@ -151,3 +151,6 @@ class DataManager:
             except ValueError:
                 return False
         return True
+
+    def get_ddns_config(self):
+        return self.config['ddns']

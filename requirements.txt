@@ -2,3 +2,4 @@ uwsgi-plugin-python3
 pyyaml
 flask
 pypushdeer
+cloudflare

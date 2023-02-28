@@ -10,9 +10,14 @@ auth:
     pc:
       uuid: "456"
       ip: "0.0.0.0/0"
+    test.com:
+      uuid: "111111"
 pusher:
   enable: true
   type: "pushdeer"
   key: "key"
   beacons:
     - "aaa"
+ddns:
+  zone: "1.com"
+  token: "111"
