@@ -16,6 +16,7 @@ def api_return(code: int) -> str:
         200: "OK",
         400: "Wrong Arguments",
         403: "Authentication Failed",
+        426: "HTTPS Required",
         500: "Internal Server Error"
     }
     return jsonify({"status": code, "desc": desc[code]}), 200
@@ -41,6 +42,8 @@ def get_my_ip():
 
 @app.route('/post-log', methods=['POST'])
 def post_log():
+    if request.url.startswith('http://') and not app.debug:
+        return api_return(426)
     hostname = request.args.get('hostname')
     uuid = request.args.get('uuid')
     if hostname is None or uuid is None:
@@ -65,6 +68,8 @@ def post_beacon():
 
 @app.route('/post-data', methods=['POST'])
 def post_data():
+    if request.url.startswith('http://') and not app.debug:
+        return api_return(426)
     hostname = request.args.get('hostname')
     uuid = request.args.get('uuid')
     table = request.args.get('table')
@@ -80,6 +85,8 @@ def post_data():
 
 @app.route('/update-dns', methods=['GET'])
 def update_dns():
+    if request.url.startswith('http://') and not app.debug:
+        return api_return(426)
     hostname = request.args.get('hostname')
     uuid = request.args.get('uuid')
     if hostname is None or uuid is None:
