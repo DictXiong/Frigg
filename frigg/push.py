@@ -42,3 +42,15 @@ class PushManager:
                     f"pusher {self.type} not implemented")
         except Exception as e:
             self.logger.error(f"pusher encountered an error: {e}")
+
+    def push_internal_error(self, error: str):
+        text = f"## [Frigg] Uncaught ERROR"
+        desp = f"**Error:** {error}"
+        try:
+            if self.type == "pushdeer":
+                self.pusher.send_markdown(text, desp=desp)
+            else:
+                raise NotImplementedError(
+                    f"pusher {self.type} not implemented")
+        except Exception as e:
+            self.logger.error(f"pusher encountered an error: {e}")

@@ -133,6 +133,10 @@ def update_dns():
     return api_return(500)
 
 
-@app.errorhandler(HTTPException)
+@app.errorhandler(Exception)
 def handle_exception(e):
-    return f"{e.code} {e.name}", e.code
+    # pass through HTTP errors
+    if isinstance(e, HTTPException):
+        return f"{e.code} {e.name}", e.code
+    pusher.push_internal_error(str(e))
+    return api_return(500)
