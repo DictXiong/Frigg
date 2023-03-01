@@ -12,7 +12,7 @@ class AuthManager:
             return False
         if uuid != self.config['clients'][hostname]['uuid']:
             return False
-        self.logger('auth success: %s', hostname)
+        self.logger.info('auth success: %s', hostname)
         return True
 
     # this is useless
