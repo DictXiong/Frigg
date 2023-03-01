@@ -1,7 +1,10 @@
-beacon:
-  types:
-    - "ccc"
-    - "aaa"
+data:
+  beacon:
+    types:
+      - "ccc"
+      - "aaa"
+    push:
+      - "ccc"
 auth:
   clients:
     server:
@@ -16,8 +19,6 @@ pusher:
   enable: true
   type: "pushdeer"
   key: "key"
-  beacons:
-    - "aaa"
 ddns:
   zone: "1.com"
   token: "111"

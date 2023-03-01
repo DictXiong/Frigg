@@ -7,19 +7,19 @@ import ipaddress
 import logging
 import logging.handlers
 import csv
-import yaml
 from frigg.push import PushManager
 
 
 class DataManager:
-    def __init__(self, logger) -> None:
+    def __init__(self, config, logger, pusher) -> None:
         self.logger = logger
+        self.pusher = pusher
+        self.config = config
         # data dir
         data_dir = os.path.join(os.path.dirname(
             os.path.realpath(__file__)), 'data')
         if not os.path.exists(data_dir):
-            data_dir = os.path.join(os.path.dirname(
-                os.path.realpath(__file__)), 'data-example')
+            raise FileNotFoundError('data directory not found')
         self.data_dir = data_dir
         # var dir
         var_dir = os.path.join(data_dir, 'variables')
@@ -31,13 +31,6 @@ class DataManager:
         if not os.path.exists(csv_dir):
             os.makedirs(csv_dir)
         self.csv_dir = csv_dir
-        # config
-        config_path = os.path.join(data_dir, 'config.yaml')
-        if not os.path.exists(config_path):
-            raise FileNotFoundError('config.yaml not found')
-        with open(config_path, 'r', encoding='utf8') as f:
-            config = yaml.full_load(f)
-        self.config = config
         # client logger
         client_log_dir = os.path.join(data_dir, 'log')
         if not os.path.exists(client_log_dir):
@@ -75,13 +68,6 @@ class DataManager:
         beacon_logger.addHandler(console_handler)
         beacon_logger.info(' beacon logger initialized')
         self.beacon_logger = beacon_logger
-        # pusher
-        pusher_config = config['pusher']
-        if pusher_config['enable']:
-            self.pusher = PushManager(
-                pusher_config['type'], pusher_config['key'], self.logger)
-        else:
-            self.pusher = None
 
     def get_var(self, var_path: str):
         var_full_path = os.path.realpath(os.path.join(self.var_dir, var_path))
@@ -89,33 +75,6 @@ class DataManager:
             return None
         with open(var_full_path, 'r', encoding="utf8") as f:
             return str(f.read()).strip()
-
-    def auth_client(self, hostname: str, uuid: str):
-        """
-        auth the client by hostname and uuid.
-        this can accept None-s normally
-        """
-        return bool(hostname in self.config['auth']['clients'] and str(uuid).lower() == str(self.config['auth']['clients'][hostname]['uuid']).lower())
-
-    def auth_ip(self, hostname: str, ip: str):
-        """
-        verify the ip address
-        """
-        ip_network = self.config['auth']['clients'][hostname]['ip']
-        ip = ipaddress.ip_address(ip)
-        if isinstance(ip_network, str):
-            ip_network = [ipaddress.ip_network(ip_network)]
-        elif isinstance(ip_network, list):
-            ip_network = [ipaddress.ip_network(i) for i in ip_network]
-        elif ip_network is None:
-            return True
-        else:
-            raise TypeError(
-                'In config.yaml/auth/clients, ip must be str, list or None')
-        for i in ip_network:
-            if ip in i:
-                return True
-        return False
 
     def write_log(self, hostname: str, content: str, ip: str):
         self.client_logger.info("[%s]::%s (%s)", hostname, content, ip)
@@ -131,11 +90,12 @@ class DataManager:
                 "[%s]::%s \"%s\" (%s)", hostname, beacon, meta, ip)
         else:
             self.beacon_logger.info("[%s]::%s (%s)", hostname, beacon, ip)
-        if self.pusher and beacon in self.config['pusher']['beacons']:
+        if self.pusher and beacon in self.config['beacon']['push']:
             self.pusher.push_beacon(
                 hostname=hostname, beacon=beacon, meta=meta, ip=ip)
         return True
 
+    # WIP
     def append_csv(self, csv_name: str, data: dict):
         csv_full_path = os.path.realpath(
             os.path.join(self.csv_dir, csv_name + '.csv'))
@@ -151,9 +111,3 @@ class DataManager:
             except ValueError:
                 return False
         return True
-
-    def get_ddns_config(self):
-        return self.config['ddns']
-
-    def get_pusher(self):
-        return self.pusher

@@ -132,3 +132,4 @@ dmypy.json
 *.code-workspace
 /frigg/data
 *.csv
+/frigg/config.yaml

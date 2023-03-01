@@ -4,12 +4,19 @@ import logging
 import ipaddress
 from flask import Flask, abort, request, jsonify
 from werkzeug.exceptions import HTTPException
+from frigg.config import ConfigManager
+from frigg.push import PushManager
+from frigg.auth import AuthManager
 from frigg.data import DataManager
-from frigg.ddns import DDNS
+from frigg.ddns import CFClient
 app = Flask(__name__)
 app.logger.setLevel(logging.INFO)
-data = DataManager(app.logger)
-ddns = DDNS(logger=app.logger, pusher=data.get_pusher(), **(data.get_ddns_config()))
+
+config = ConfigManager(app.logger)
+pusher = PushManager(config.get_config('push'), app.logger)
+auth = AuthManager(config.get_config('auth'), app.logger)
+data = DataManager(config.get_config('data'), app.logger, pusher)
+cf = CFClient(config.get_config('ddns'), app.logger, pusher)
 
 def api_return(code: int) -> str:
     desc = {
@@ -48,7 +55,7 @@ def post_log():
     uuid = request.args.get('uuid')
     if hostname is None or uuid is None:
         return api_return(400)
-    if not data.auth_client(hostname, uuid):
+    if not auth.auth(hostname, uuid):
         return api_return(403)
     content = str(request.data, encoding='utf8')
     if content:
@@ -66,6 +73,7 @@ def post_beacon():
     return api_return(200)
 
 
+# WIP
 @app.route('/post-data', methods=['POST'])
 def post_data():
     if request.url.startswith('http://') and not app.debug:
@@ -75,7 +83,7 @@ def post_data():
     table = request.args.get('table')
     if hostname is None or uuid is None or table is None:
         return api_return(400)
-    if not data.auth_client(hostname, uuid):
+    if not auth.auth(hostname, uuid):
         return api_return(403)
     print(request.form)
     if not data.append_csv(table, request.form):
@@ -91,7 +99,7 @@ def update_dns():
     uuid = request.args.get('uuid')
     if hostname is None or uuid is None:
         return api_return(400)
-    if not data.auth_client(hostname, uuid):
+    if not auth.auth(hostname, uuid):
         return api_return(403)
     ip4 = request.args.get('ip4')
     ip6 = request.args.get('ip6')
@@ -119,7 +127,7 @@ def update_dns():
             return api_return(400)
     if not ip4 and not ip6:
         return api_return(400)
-    ret = ddns.add_or_update_record(hostname, ip4, ip6)
+    ret = cf.add_or_update_record(hostname, ip4, ip6)
     if ret:
         return api_return(200)
     return api_return(500)
