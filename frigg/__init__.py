@@ -127,7 +127,7 @@ def update_dns():
             return api_return(400)
     if not ip4 and not ip6:
         return api_return(400)
-    ret = cf.add_or_update_record(hostname, ip4, ip6)
+    ret = cf.add_or_update_record(hostname + '.0.ibd.ink', ip4, ip6)
     if ret:
         return api_return(200)
     return api_return(500)
