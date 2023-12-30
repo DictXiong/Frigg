@@ -1,4 +1,4 @@
-uwsgi-plugin-python3
+# apt install uwsgi uwsgi-plugin-python3
 pyyaml
 flask
 pypushdeer
