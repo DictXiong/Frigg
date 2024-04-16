@@ -1,5 +1,6 @@
 # pylint: disable=W,C,R
 import CloudFlare
+import CloudFlare.exceptions
 
 
 class CFClient:
@@ -10,7 +11,7 @@ class CFClient:
         try:
             params = {'name': config['zone']}
             zones = self.cf.zones.get(params=params)
-        except Exception as e:
+        except CloudFlare.exceptions.CloudFlareError as e:
             self.logger.fatal('error: %s - api call failed' % (e))
         if len(zones) != 1:
             self.logger.fatal('error: %s - api call returned %d zones' % (config['zone'], len(zones)))
@@ -20,24 +21,21 @@ class CFClient:
         self.logger.info('zone %s found' % (self.zone_name))
 
 
-    def add_or_update_record(self, name: str, ip4: str, ip6: str):
+    def _add_or_update_record(self, name: str, ip4: str="", ip6: str=""):
         assert name.endswith(self.zone_name)
-        ips = {'A': ip4, 'AAAA': ip6}
-        for ip_type, ip in ips.items():
+        for ip_type, ip in [('A', ip4), ('AAAA', ip6)]:
             if not ip:
                 continue
-            try:
-                params = {'name': name, 'match': 'all', 'type': ip_type}
-                dns_records = self.cf.zones.dns_records.get(self.zone_id, params=params)
-            except Exception as e:
-                self.logger.error('error: %s - api call failed' % (e))
-                return False
+            params = {'name': name, 'match': 'all', 'type': ip_type}
+            dns_records = self.cf.zones.dns_records.get(self.zone_id, params=params)
             updated = False
             for dns_record in dns_records:
-                if dns_record['type'] != ip_type:
+                assert dns_record['type'] == ip_type and dns_record['name'] == name
+                if updated:
+                    self.cf.zones.dns_records.delete(self.zone_id, dns_record['id'])
+                    self.logger.info('record %s deleted' % (name))
                     continue
                 if dns_record['content'] == ip:
-                    assert dns_record['name'] == name
                     self.logger.info('record %s not changed with %s' % (name, ip))
                     updated = True
                     continue
@@ -50,11 +48,7 @@ class CFClient:
                     'proxied': False,
                     'comment': 'Frigg DDNS'
                 }
-                try:
-                    dns_record = self.cf.zones.dns_records.put(self.zone_id, dns_record_id, data=dns_record)
-                except Exception as e:
-                    self.logger.error('error: %s - api call failed' % (e))
-                    return False
+                dns_record = self.cf.zones.dns_records.put(self.zone_id, dns_record_id, data=dns_record)
                 self.logger.info('record %s updated to %s' % (name, ip))
                 if self.pusher:
                     self.pusher.push_dns_updated(name, ip, original_ip)
@@ -67,12 +61,21 @@ class CFClient:
                     'proxied': False,
                     'comment': 'Frigg DDNS'
                 }
-                try:
-                    self.cf.zones.dns_records.post(self.zone_id, data=dns_record)
-                except Exception as e:
-                    self.logger.error('error: %s - api call failed' % (e))
-                    return False
+                self.cf.zones.dns_records.post(self.zone_id, data=dns_record)
                 self.logger.info('record %s created with %s' % (name, ip))
                 if self.pusher:
                     self.pusher.push_dns_updated(name, ip)
+        return True
+
+    def run(self, name: str, ip4: str, ip6: str):
+        assert '.' not in name
+        try:
+            self._add_or_update_record(f"{name}.0.{self.zone_name}", ip4, ip6)
+            if ip4:
+                self._add_or_update_record(f"{name}.4.{self.zone_name}", ip4=ip4)
+            if ip6:
+                self._add_or_update_record(f"{name}.6.{self.zone_name}", ip6=ip6)
+        except CloudFlare.exceptions.CloudFlareError as e:
+            self.logger.error('error: %s - api call failed' % (e))
+            return False
         return True
