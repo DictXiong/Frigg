@@ -21,14 +21,14 @@ class CFClient:
         self.logger.info('zone %s found' % (self.zone_name))
 
 
-    def _add_or_update_record(self, name: str, ip4: str="", ip6: str=""):
+    def _aud_record(self, name: str, ip4: str="", ip6: str=""):
         assert name.endswith(self.zone_name)
         for ip_type, ip in [('A', ip4), ('AAAA', ip6)]:
+            updated = False
             if not ip:
-                continue
+                updated = True
             params = {'name': name, 'match': 'all', 'type': ip_type}
             dns_records = self.cf.zones.dns_records.get(self.zone_id, params=params)
-            updated = False
             for dns_record in dns_records:
                 assert dns_record['type'] == ip_type and dns_record['name'] == name
                 if updated:
@@ -70,11 +70,9 @@ class CFClient:
     def run(self, name: str, ip4: str, ip6: str):
         assert '.' not in name
         try:
-            self._add_or_update_record(f"{name}.0.{self.zone_name}", ip4, ip6)
-            if ip4:
-                self._add_or_update_record(f"{name}.4.{self.zone_name}", ip4=ip4)
-            if ip6:
-                self._add_or_update_record(f"{name}.6.{self.zone_name}", ip6=ip6)
+            self._aud_record(f"{name}.0.{self.zone_name}", ip4, ip6)
+            self._aud_record(f"{name}.4.{self.zone_name}", ip4=ip4)
+            self._aud_record(f"{name}.6.{self.zone_name}", ip6=ip6)
         except CloudFlare.exceptions.CloudFlareError as e:
             self.logger.error('error: %s - api call failed' % (e))
             return False
