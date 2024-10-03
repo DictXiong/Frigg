@@ -1,4 +1,5 @@
 # pylint: disable=W,C,R
+import time
 import CloudFlare
 import CloudFlare.exceptions
 
@@ -46,7 +47,7 @@ class CFClient:
                     'type': ip_type,
                     'content': ip,
                     'proxied': False,
-                    'comment': 'Frigg DDNS'
+                    'comment': f'FRIGG {time.strftime("%Y-%m-%d %H:%M:%S")}'
                 }
                 dns_record = self.cf.zones.dns_records.put(self.zone_id, dns_record_id, data=dns_record)
                 self.logger.info('record %s updated to %s' % (name, ip))
@@ -59,7 +60,7 @@ class CFClient:
                     'type': ip_type,
                     'content': ip,
                     'proxied': False,
-                    'comment': 'Frigg DDNS'
+                    'comment': f'FRIGG {time.strftime("%Y-%m-%d %H:%M:%S")}'
                 }
                 self.cf.zones.dns_records.post(self.zone_id, data=dns_record)
                 self.logger.info('record %s created with %s' % (name, ip))
