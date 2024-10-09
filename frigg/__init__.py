@@ -35,6 +35,7 @@ def hello_world():
 
 
 @app.route('/get-var/<path:var_path>')
+@app.route('/var/<path:var_path>')
 def get_var(var_path):
     ret = data.get_var(var_path)
     if ret is not None:
@@ -43,11 +44,13 @@ def get_var(var_path):
 
 
 @app.route('/get-my-ip')
+@app.route('/ip')
 def get_my_ip():
     return request.remote_addr
 
 
 @app.route('/post-log', methods=['POST'])
+@app.route('/log', methods=['POST'])
 def post_log():
     if request.url.startswith('http://') and not app.debug:
         return api_return(426)
@@ -64,6 +67,7 @@ def post_log():
 
 
 @app.route('/post-beacon', methods=['POST'])
+@app.route('/beacon', methods=['POST'])
 def post_beacon():
     hostname = request.args.get('hostname')
     beacon = request.args.get('beacon')
@@ -74,7 +78,7 @@ def post_beacon():
 
 
 # WIP
-@app.route('/post-data', methods=['POST'])
+# @app.route('/post-data', methods=['POST'])
 def post_data():
     if request.url.startswith('http://') and not app.debug:
         return api_return(426)
@@ -92,6 +96,7 @@ def post_data():
 
 
 @app.route('/update-dns', methods=['GET'])
+@app.route('/ddns', methods=['GET'])
 def update_dns():
     if request.url.startswith('http://') and not app.debug:
         return api_return(426)
