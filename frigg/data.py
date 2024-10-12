@@ -21,16 +21,6 @@ class DataManager:
         if not os.path.exists(data_dir):
             raise FileNotFoundError('data directory not found')
         self.data_dir = data_dir
-        # var dir
-        var_dir = os.path.join(data_dir, 'variables')
-        if not os.path.exists(var_dir):
-            os.makedirs(var_dir)
-        self.var_dir = var_dir
-        # csv dir
-        csv_dir = os.path.join(data_dir, 'csv')
-        if not os.path.exists(csv_dir):
-            os.makedirs(csv_dir)
-        self.csv_dir = csv_dir
         # client logger
         client_log_dir = os.path.join(data_dir, 'log')
         if not os.path.exists(client_log_dir):
@@ -69,13 +59,6 @@ class DataManager:
         beacon_logger.info(' beacon logger initialized')
         self.beacon_logger = beacon_logger
 
-    def get_var(self, var_path: str):
-        var_full_path = os.path.realpath(os.path.join(self.var_dir, var_path))
-        if not var_full_path.startswith(self.var_dir) or not os.path.exists(var_full_path):
-            return None
-        with open(var_full_path, 'r', encoding="utf8") as f:
-            return str(f.read()).strip()
-
     def write_log(self, hostname: str, content: str, ip: str):
         self.client_logger.info("[%s]::%s (%s)", hostname, content, ip)
         return True
@@ -93,21 +76,4 @@ class DataManager:
         if self.pusher and beacon in self.config['beacon']['push']:
             self.pusher.push_beacon(
                 hostname=hostname, beacon=beacon, meta=meta, ip=ip)
-        return True
-
-    # WIP
-    def append_csv(self, csv_name: str, data: dict):
-        csv_full_path = os.path.realpath(
-            os.path.join(self.csv_dir, csv_name + '.csv'))
-        if not os.path.exists(csv_full_path) or not csv_full_path.startswith(self.csv_dir):
-            return False
-        field_names = []
-        with open(csv_full_path, 'r', encoding='utf8') as f:
-            field_names = csv.DictReader(f).fieldnames
-        with open(csv_full_path, 'a', encoding='utf8') as f:
-            dict_writer = csv.DictWriter(f, fieldnames=field_names)
-            try:
-                dict_writer.writerow(data)
-            except ValueError:
-                return False
         return True

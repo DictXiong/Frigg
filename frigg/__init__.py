@@ -6,16 +6,16 @@ from flask import Flask, abort, request, jsonify
 from werkzeug.exceptions import HTTPException
 from frigg.config import ConfigManager
 from frigg.push import PushManager
-from frigg.auth import AuthManager
 from frigg.data import DataManager
 from frigg.ddns import CFClient
+from frigg.db import DBManager
 app = Flask(__name__)
 app.logger.setLevel(logging.INFO)
 
 config = ConfigManager(app.logger)
 pusher = PushManager(config.get_config('push'), app.logger)
-auth = AuthManager(config.get_config('auth'), app.logger)
 data = DataManager(config.get_config('data'), app.logger, pusher)
+db = DBManager(config.get_config('db'), app.logger)
 cf = CFClient(config.get_config('ddns'), app.logger, pusher)
 
 def api_return(code: int) -> str:
@@ -37,7 +37,7 @@ def hello_world():
 @app.route('/get-var/<path:var_path>')
 @app.route('/var/<path:var_path>')
 def get_var(var_path):
-    ret = data.get_var(var_path)
+    ret = db.get_var(var_path)
     if ret is not None:
         return ret
     abort(404)
@@ -58,7 +58,7 @@ def post_log():
     uuid = request.args.get('uuid')
     if hostname is None or uuid is None:
         return api_return(400)
-    if not auth.auth(hostname, uuid):
+    if not db.auth_host(hostname, uuid):
         return api_return(403)
     content = str(request.data, encoding='utf8')
     if content:
@@ -77,24 +77,6 @@ def post_beacon():
     return api_return(200)
 
 
-# WIP
-# @app.route('/post-data', methods=['POST'])
-def post_data():
-    if request.url.startswith('http://') and not app.debug:
-        return api_return(426)
-    hostname = request.args.get('hostname')
-    uuid = request.args.get('uuid')
-    table = request.args.get('table')
-    if hostname is None or uuid is None or table is None:
-        return api_return(400)
-    if not auth.auth(hostname, uuid):
-        return api_return(403)
-    print(request.form)
-    if not data.append_csv(table, request.form):
-        return api_return(400)
-    return api_return(200)
-
-
 @app.route('/update-dns', methods=['GET'])
 @app.route('/ddns', methods=['GET'])
 def update_dns():
@@ -104,7 +86,7 @@ def update_dns():
     uuid = request.args.get('uuid')
     if hostname is None or uuid is None:
         return api_return(400)
-    if not auth.auth(hostname, uuid):
+    if not db.auth_host(hostname, uuid):
         return api_return(403)
     ip4 = request.args.get('ip4')
     ip6 = request.args.get('ip6')
