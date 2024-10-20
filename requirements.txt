@@ -2,5 +2,5 @@
 pyyaml
 flask
 pypushdeer
-cloudflare
+cloudflare==2.19.*
 mysql-connector-python
