@@ -7,7 +7,7 @@ class ConfigManager:
         self.logger = logger
         if not os.path.exists(config_path):
             raise FileNotFoundError(f"{config_path} not found")
-        with open(config_path, "r", encoding="utf8") as f:
+        with open(config_path, "r", encoding="utf-8") as f:
             config = yaml.full_load(f)
         self.config = config
 

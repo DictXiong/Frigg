@@ -57,15 +57,15 @@ db = DBManager(config.get_config("db"), logger)
 cf = CFClient(config.get_config("ddns"), logger, pusher)
 
 
-def api_return(code: int) -> str:
-    desc = {
+def api_return(code: int, desc=None) -> str:
+    DESC = {
         200: "OK",
         400: "Wrong Arguments",
         403: "Authentication Failed",
         426: "HTTPS Required",
         500: "Internal Server Error",
     }
-    return jsonify({"status": code, "desc": desc[code]}), 200
+    return jsonify({"status": code, "desc": DESC[code] if desc is None else desc}), 200
 
 
 @app.route("/")
@@ -86,24 +86,6 @@ def get_var(var_path):
 @app.route("/ip")
 def get_my_ip():
     return request.remote_addr
-
-
-@app.route("/post-log", methods=["POST"])
-@app.route("/log", methods=["POST"])
-def post_log():
-    if request.url.startswith("http://") and not app.debug:
-        return api_return(426)
-    hostname = request.args.get("hostname")
-    uuid = request.args.get("uuid")
-    if hostname is None or uuid is None:
-        return api_return(400)
-    if not db.auth_host(hostname, uuid):
-        return api_return(403)
-    content = str(request.data, encoding="utf8")
-    if content:
-        data.write_log(hostname, content, request.remote_addr)
-    return api_return(200)
-
 
 @app.route("/post-beacon", methods=["POST"])
 @app.route("/beacon", methods=["POST"])

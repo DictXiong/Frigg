@@ -19,10 +19,10 @@ class PushManager:
     def push_beacon(self, hostname: str, beacon: str, meta: str, ip: str):
         if not self.enable:
             return
-        text = f"## [Frigg] {beacon} on {hostname}"
+        text = f"## [Frigg] {beacon}@{hostname}"
         desp = f"**Reporter:** {ip}"
         if meta:
-            desp = f"**Meta:** {meta}; \n" + desp
+            desp = f"**Meta:** {meta}\n" + desp
         try:
             if self.type == "pushdeer":
                 self.pusher.send_markdown(text, desp=desp)
@@ -35,9 +35,9 @@ class PushManager:
         if not self.enable:
             return
         text = f"## [Frigg.DDNS] {hostname} updated"
-        desp = f"**Reporter:** {ip}"
+        desp = f"**Content:** {ip}"
         if original_ip:
-            desp += f"; \n**Original IP:** {original_ip}"
+            desp += f"\n**Was:** {original_ip}"
         try:
             if self.type == "pushdeer":
                 self.pusher.send_markdown(text, desp=desp)

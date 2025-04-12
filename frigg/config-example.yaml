@@ -1,10 +1,7 @@
 data:
   beacon:
-    types:
-      - "ccc"
-      - "aaa"
-    push:
-      - "ccc"
+    "ccc": true
+    "aaa":
 auth:
   clients:
     server:
