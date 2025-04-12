@@ -29,9 +29,9 @@ class DataManager:
         if meta:
             if len(meta) > 512:
                 return False
-            self.beacon_logger.info('[%s]:%s "%s" (%s)', hostname, beacon, meta, ip)
+            self.beacon_logger.info('[%s]::%s "%s" (%s)', hostname, beacon, meta, ip)
         else:
-            self.beacon_logger.info("[%s]:%s (%s)", hostname, beacon, ip)
-        if self.pusher and self.config["beacon"]:
+            self.beacon_logger.info("[%s]::%s (%s)", hostname, beacon, ip)
+        if self.pusher and self.config["beacon"][beacon]:
             self.pusher.push_beacon(hostname=hostname, beacon=beacon, meta=meta, ip=ip)
         return True

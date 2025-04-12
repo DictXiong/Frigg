@@ -14,7 +14,7 @@ from frigg.db import DBManager
 parser = argparse.ArgumentParser()
 parser.add_argument("-c", "--config", default="config.yaml", help="Path to the configuration file")
 parser.add_argument('-v', '--verbose', help='Show more log', action='store_true')
-args = parser.parse_args()
+args, _ = parser.parse_known_args()
 
 app = Flask(__name__)
 if args.verbose:
@@ -26,12 +26,13 @@ class CustomFormatter(logging.Formatter):
     yellow = "\x1b[33;20m"
     red = "\x1b[31;20m"
     bold_red = "\x1b[31;1m"
+    green = "\x1b[32;20m"
     reset = "\x1b[0m"
     template = "%(levelname)s in %(filename)s: %(message)s"
 
     FORMATS = {
         logging.DEBUG: grey + template + reset,
-        logging.INFO: grey + template + reset,
+        logging.INFO: green + template + reset,
         logging.WARNING: yellow + template + reset,
         logging.ERROR: red + template + reset,
         logging.CRITICAL: bold_red + template + reset,

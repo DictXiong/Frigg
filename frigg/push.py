@@ -19,7 +19,7 @@ class PushManager:
     def push_beacon(self, hostname: str, beacon: str, meta: str, ip: str):
         if not self.enable:
             return
-        text = f"## [Frigg] {beacon}@{hostname}"
+        text = f"## [Frigg] {beacon} @ {hostname}"
         desp = f"**Reporter:** {ip}"
         if meta:
             desp = f"**Meta:** {meta}\n" + desp
