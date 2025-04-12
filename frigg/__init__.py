@@ -1,6 +1,7 @@
 # pylint: disable=missing-module-docstring,missing-function-docstring,invalid-name,line-too-long
 
 import logging
+import argparse
 import ipaddress
 from flask import Flask, abort, request, jsonify
 from werkzeug.exceptions import HTTPException
@@ -9,14 +10,52 @@ from frigg.push import PushManager
 from frigg.data import DataManager
 from frigg.ddns import CFClient
 from frigg.db import DBManager
-app = Flask(__name__)
-app.logger.setLevel(logging.INFO)
 
-config = ConfigManager(app.logger)
-pusher = PushManager(config.get_config('push'), app.logger)
-data = DataManager(config.get_config('data'), app.logger, pusher)
-db = DBManager(config.get_config('db'), app.logger)
-cf = CFClient(config.get_config('ddns'), app.logger, pusher)
+parser = argparse.ArgumentParser()
+parser.add_argument("-c", "--config", default="config.yaml", help="Path to the configuration file")
+parser.add_argument('-v', '--verbose', help='Show more log', action='store_true')
+args = parser.parse_args()
+
+app = Flask(__name__)
+if args.verbose:
+    app.logger.setLevel(logging.DEBUG)
+
+class CustomFormatter(logging.Formatter):
+
+    grey = "\x1b[38;20m"
+    yellow = "\x1b[33;20m"
+    red = "\x1b[31;20m"
+    bold_red = "\x1b[31;1m"
+    reset = "\x1b[0m"
+    template = "%(levelname)s in %(filename)s: %(message)s"
+
+    FORMATS = {
+        logging.DEBUG: grey + template + reset,
+        logging.INFO: grey + template + reset,
+        logging.WARNING: yellow + template + reset,
+        logging.ERROR: red + template + reset,
+        logging.CRITICAL: bold_red + template + reset,
+    }
+
+    def format(self, record):
+        log_fmt = self.FORMATS.get(record.levelno)
+        formatter = logging.Formatter(log_fmt)
+        return formatter.format(record)
+
+log_level = logging.DEBUG if args.verbose else logging.INFO
+logger = logging.getLogger("frigg")
+logger.setLevel(log_level)
+ch = logging.StreamHandler()
+ch.setLevel(log_level)
+ch.setFormatter(CustomFormatter())
+logger.addHandler(ch)
+
+config = ConfigManager(args.config, logger)
+pusher = PushManager(config.get_config("push"), logger)
+data = DataManager(config.get_config("data"), logger, pusher)
+db = DBManager(config.get_config("db"), logger)
+cf = CFClient(config.get_config("ddns"), logger, pusher)
+
 
 def api_return(code: int) -> str:
     desc = {
@@ -24,18 +63,18 @@ def api_return(code: int) -> str:
         400: "Wrong Arguments",
         403: "Authentication Failed",
         426: "HTTPS Required",
-        500: "Internal Server Error"
+        500: "Internal Server Error",
     }
     return jsonify({"status": code, "desc": desc[code]}), 200
 
 
-@app.route('/')
+@app.route("/")
 def hello_world():
-    return '<h1>Welcome to api.beardic.cn</h1>', 200
+    return "<h1>Welcome to api.beardic.cn</h1>", 200
 
 
-@app.route('/get-var/<path:var_path>')
-@app.route('/var/<path:var_path>')
+@app.route("/get-var/<path:var_path>")
+@app.route("/var/<path:var_path>")
 def get_var(var_path):
     ret = db.get_var(var_path)
     if ret is not None:
@@ -43,53 +82,57 @@ def get_var(var_path):
     abort(404)
 
 
-@app.route('/get-my-ip')
-@app.route('/ip')
+@app.route("/get-my-ip")
+@app.route("/ip")
 def get_my_ip():
     return request.remote_addr
 
 
-@app.route('/post-log', methods=['POST'])
-@app.route('/log', methods=['POST'])
+@app.route("/post-log", methods=["POST"])
+@app.route("/log", methods=["POST"])
 def post_log():
-    if request.url.startswith('http://') and not app.debug:
+    if request.url.startswith("http://") and not app.debug:
         return api_return(426)
-    hostname = request.args.get('hostname')
-    uuid = request.args.get('uuid')
+    hostname = request.args.get("hostname")
+    uuid = request.args.get("uuid")
     if hostname is None or uuid is None:
         return api_return(400)
     if not db.auth_host(hostname, uuid):
         return api_return(403)
-    content = str(request.data, encoding='utf8')
+    content = str(request.data, encoding="utf8")
     if content:
         data.write_log(hostname, content, request.remote_addr)
     return api_return(200)
 
 
-@app.route('/post-beacon', methods=['POST'])
-@app.route('/beacon', methods=['POST'])
+@app.route("/post-beacon", methods=["POST"])
+@app.route("/beacon", methods=["POST"])
 def post_beacon():
-    hostname = request.args.get('hostname')
-    beacon = request.args.get('beacon')
-    meta = str(request.data, encoding='utf8')
-    if hostname is None or beacon is None or not data.write_beacon(hostname, beacon, meta, request.remote_addr):
+    hostname = request.args.get("hostname")
+    beacon = request.args.get("beacon")
+    meta = str(request.data, encoding="utf8")
+    if (
+        hostname is None
+        or beacon is None
+        or not data.write_beacon(hostname, beacon, meta, request.remote_addr)
+    ):
         return api_return(400)
     return api_return(200)
 
 
-@app.route('/update-dns', methods=['GET'])
-@app.route('/ddns', methods=['GET'])
+@app.route("/update-dns", methods=["GET"])
+@app.route("/ddns", methods=["GET"])
 def update_dns():
-    if request.url.startswith('http://') and not app.debug:
+    if request.url.startswith("http://") and not app.debug:
         return api_return(426)
-    hostname = request.args.get('hostname')
-    uuid = request.args.get('uuid')
+    hostname = request.args.get("hostname")
+    uuid = request.args.get("uuid")
     if hostname is None or uuid is None:
         return api_return(400)
     if not db.auth_host(hostname, uuid):
         return api_return(403)
-    ip4 = request.args.get('ip4')
-    ip6 = request.args.get('ip6')
+    ip4 = request.args.get("ip4")
+    ip6 = request.args.get("ip6")
     if ip4 == "auto":
         ip4 = request.remote_addr
     if ip6 == "auto":
@@ -101,7 +144,7 @@ def update_dns():
         except ValueError:
             pass
         if not isinstance(addr, ipaddress.IPv4Address):
-            app.logger.warning("Invalid IPv4 Address: %s", ip4)
+            logger.warning("Invalid IPv4 Address: %s", ip4)
             return api_return(400)
     if ip6:
         addr = None
@@ -110,7 +153,7 @@ def update_dns():
         except ValueError:
             pass
         if not isinstance(addr, ipaddress.IPv6Address):
-            app.logger.warning("Invalid IPv6 Address: %s", ip6)
+            logger.warning("Invalid IPv6 Address: %s", ip6)
             return api_return(400)
     if not ip4 and not ip6:
         return api_return(400)

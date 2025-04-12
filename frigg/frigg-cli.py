@@ -4,76 +4,84 @@ import logging
 from db import DBManager
 from config import ConfigManager
 
-logger = logging.getLogger('frigg')
+logger = logging.getLogger("frigg")
 logger.setLevel(logging.INFO)
 config = ConfigManager(logger)
-db = DBManager(config.get_config('db'), logger)
+db = DBManager(config.get_config("db"), logger)
 
-parser = argparse.ArgumentParser(description='Frigg CLI')
-parser.add_argument('action', nargs='?', help='Action to perform', default='')
-parser.add_argument('args', nargs='*', help='Arguments for the action', default=[])
+parser = argparse.ArgumentParser(description="Frigg CLI")
+parser.add_argument("action", nargs="?", help="Action to perform", default="")
+parser.add_argument("args", nargs="*", help="Arguments for the action", default=[])
 args = parser.parse_args()
+
 
 def set_host(args):
     if len(args) != 2:
-        print('Usage: sethost <name> <uuid>')
+        print("Usage: sethost <name> <uuid>")
         return
     name, uuid_str = args
     db.set_host(name, uuid_str)
 
+
 def list_hosts(args):
     if len(args) != 0:
-        print('Usage: listhosts')
+        print("Usage: listhosts")
         return
-    print('Hosts:')
+    print("Hosts:")
     for i in db.list_hosts():
         print(i)
 
+
 def test_host(args):
     if len(args) != 2:
-        print('Usage: testhost <name> <uuid>')
+        print("Usage: testhost <name> <uuid>")
         return
     name, uuid_str = args
     if db.auth_host(name, uuid_str):
-        print('Authentication Succeeded')
+        print("Authentication Succeeded")
     else:
-        print('Authentication Failed')
+        print("Authentication Failed")
+
 
 def set_var(args):
     if len(args) != 2:
-        print('Usage: setvar <name> <value>')
+        print("Usage: setvar <name> <value>")
         return
     name, value = args
     db.set_var(name, value)
 
+
 def get_var(args):
     if len(args) != 1:
-        print('Usage: getvar <name>')
+        print("Usage: getvar <name>")
         return
     name = args[0]
     value = db.get_var(name)
     if value is not None:
         print(value)
     else:
-        print('Var Not Found')
+        print("Var Not Found")
+
 
 def del_var(args):
     if len(args) != 1:
-        print('Usage: delvar <name>')
+        print("Usage: delvar <name>")
         return
     name = args[0]
     db.del_var(name)
 
+
 def list_vars(args):
     if len(args) != 0:
-        print('Usage: listvars')
+        print("Usage: listvars")
         return
-    print('Vars:')
+    print("Vars:")
     for i in db.list_vars():
         print(i)
 
+
 class FriggCli(cmd.Cmd):
-    prompt = 'frigg> '
+    prompt = "frigg> "
 
     def do_sethost(self, line):
         set_host(line.split())
@@ -97,18 +105,19 @@ class FriggCli(cmd.Cmd):
         list_vars(line.split())
 
     def do_exit(self, line):
-        logger.info('Bye!')
+        logger.info("Bye!")
         return True
 
     def do_EOF(self, line):
-        logger.info('Bye!')
+        logger.info("Bye!")
         return True
 
     def emptyline(self):
         pass
 
-if __name__ == '__main__':
-    if args.action == '':
+
+if __name__ == "__main__":
+    if args.action == "":
         FriggCli().cmdloop()
     else:
-        FriggCli().onecmd(args.action + ' ' + ' '.join(args.args))
+        FriggCli().onecmd(args.action + " " + " ".join(args.args))
