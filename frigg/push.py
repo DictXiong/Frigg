@@ -14,11 +14,8 @@ class PushManager:
             raise NotImplementedError(f"pusher {type} not implemented")
         self.type = config["type"]
         self.logger = logger
-        self.enable = config["enable"]
 
     def push_beacon(self, hostname: str, beacon: str, meta: str, ip: str):
-        if not self.enable:
-            return
         text = f"## [Frigg] {beacon} @ {hostname}"
         desp = f"**Reporter:** {ip}"
         if meta:
@@ -32,8 +29,6 @@ class PushManager:
             self.logger.error("pusher encountered an error: %s", e)
 
     def push_dns_updated(self, hostname: str, ip: str, original_ip: str = None):
-        if not self.enable:
-            return
         text = f"## [Frigg.DDNS] {hostname} updated"
         desp = f"**Content:** {ip}"
         if original_ip:

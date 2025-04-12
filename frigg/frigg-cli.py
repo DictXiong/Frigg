@@ -6,14 +6,15 @@ from config import ConfigManager
 
 logger = logging.getLogger("frigg")
 logger.setLevel(logging.INFO)
-config = ConfigManager(logger)
-db = DBManager(config.get_config("db"), logger)
 
 parser = argparse.ArgumentParser(description="Frigg CLI")
 parser.add_argument("action", nargs="?", help="Action to perform", default="")
 parser.add_argument("args", nargs="*", help="Arguments for the action", default=[])
+parser.add_argument("-c", "--config", default="config.yaml", help="Path to the configuration file")
 args = parser.parse_args()
 
+config = ConfigManager(args.config, logger)
+db = DBManager(config.get_config("db"), logger)
 
 def set_host(args):
     if len(args) != 2:

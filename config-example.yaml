@@ -1,0 +1,16 @@
+data:
+  beacon:
+    "ccc.aaa": true
+    "aaa.ccc": false
+push:
+  type: "pushdeer"
+  key_file: /path/to/key  # or key: xxxx
+ddns:
+  zone: "1.com"
+  token_file: /path/to/cf-token  # or tokenb: xxx
+db:
+  secret_file: /path/to/secret  # or host: xxx // user: username // password: password
+# in the form of:
+# host=xxx.com
+# user=username
+# password=password

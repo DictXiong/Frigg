@@ -13,6 +13,12 @@ class DBManager:
     def __init__(self, config, logger):
         self.config = config
         self.logger = logger
+        if "secret_file" in config:
+            with open(config["secret_file"], "r", encoding="utf-8") as f:
+                for line in f.readlines():
+                    key, value = line.rstrip("\n").split("=")
+                    assert key in ["host", "user", "password"]
+                    config[key] = value
         self.init_db()
 
     def get_conn(self):
