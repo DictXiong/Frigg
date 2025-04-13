@@ -1,7 +1,7 @@
-from frigg import app
+from .app import app
 import argparse
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser(description="Run the frigg server.")
     parser.add_argument(
         "-D",
@@ -17,3 +17,6 @@ if __name__ == "__main__":
     )
     args, _ = parser.parse_known_args()
     app.run(debug=not args.no_debug, host=args.host, port=args.port)
+
+if __name__ == "__main__":
+    main()

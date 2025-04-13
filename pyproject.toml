@@ -1,0 +1,21 @@
+[project]
+name = "frigg"
+version = "1.0.0"
+description = "api.beardic.cn"
+authors = [{ name="Dict Xiong", email="me@beardic.cn" }]
+requires-python = ">=3.7"
+dependencies = [
+    "flask",
+    "pyyaml",
+    "pypushdeer",
+    "cloudflare",
+    "mysql-connector-python"
+]
+
+[project.scripts]
+frigg = "frigg.frigg:main"
+frigg-cli = "frigg.frigg_cli:main"
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
