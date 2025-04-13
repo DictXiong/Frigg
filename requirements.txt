@@ -1,6 +1,7 @@
 # apt install uwsgi uwsgi-plugin-python3
 pyyaml
 flask
+flask-limiter
 pypushdeer
 cloudflare
 mysql-connector-python

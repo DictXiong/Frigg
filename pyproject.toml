@@ -6,6 +6,7 @@ authors = [{ name="Dict Xiong", email="me@beardic.cn" }]
 requires-python = ">=3.7"
 dependencies = [
     "flask",
+    "flask-limiter",
     "pyyaml",
     "pypushdeer",
     "cloudflare",

@@ -6,6 +6,8 @@ import argparse
 import ipaddress
 from flask import Flask, abort, request, jsonify
 from werkzeug.exceptions import HTTPException
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from .config import ConfigManager
 from .push import PushManager
 from .data import DataManager
@@ -22,6 +24,7 @@ args, _ = parser.parse_known_args()
 app = Flask(__name__)
 if args.verbose:
     app.logger.setLevel(logging.DEBUG)
+limiter = Limiter(app=app, key_func=get_remote_address, default_limits=['600 per 10 minutes'])
 
 
 class CustomFormatter(logging.Formatter):
@@ -115,6 +118,7 @@ def get_my_ip():
     return request.remote_addr
 
 
+@limiter.limit("60 per 10 minutes")
 @app.route("/post-beacon", methods=["POST"])
 @app.route("/beacon", methods=["POST"])
 def post_beacon():
