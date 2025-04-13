@@ -1,5 +1,6 @@
 # pylint: disable=missing-module-docstring,missing-function-docstring,invalid-name,line-too-long
 
+import re
 import logging
 import argparse
 import ipaddress
@@ -73,6 +74,25 @@ def api_return(code: int, desc=None) -> str:
     return jsonify({"status": code, "desc": DESC[code] if desc is None else desc}), 200
 
 
+def invalid_var_path(s: str):
+    return re.fullmatch(r"[a-z][-a-z/]*", s) is None
+
+
+def invalid_hostname(s: str):
+    return re.fullmatch(r"[a-z][-a-z0-9_]*", s) is None
+
+
+def invalid_uuid(s: str):
+    return (
+        re.fullmatch(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", s)
+        is None
+    )
+
+
+def invalid_beacon(s: str):
+    return re.fullmatch(r"[a-z][-a-z.]*", s) is None
+
+
 @app.route("/")
 def hello_world():
     return "<h1>Welcome to api.beardic.cn</h1>", 200
@@ -81,6 +101,8 @@ def hello_world():
 @app.route("/get-var/<path:var_path>")
 @app.route("/var/<path:var_path>")
 def get_var(var_path):
+    if invalid_var_path(var_path):
+        abort(400)
     ret = db.get_var(var_path)
     if ret is not None:
         return ret
@@ -100,8 +122,8 @@ def post_beacon():
     beacon = request.args.get("beacon")
     meta = str(request.data, encoding="utf8")
     if (
-        hostname is None
-        or beacon is None
+        invalid_hostname(hostname)
+        or invalid_beacon(beacon)
         or not data.write_beacon(hostname, beacon, meta, request.remote_addr)
     ):
         return api_return(400)
@@ -115,7 +137,7 @@ def update_dns():
         return api_return(426)
     hostname = request.args.get("hostname")
     uuid = request.args.get("uuid")
-    if hostname is None or uuid is None:
+    if invalid_hostname(hostname) or invalid_uuid(uuid):
         return api_return(400)
     if not db.auth_host(hostname, uuid):
         return api_return(403)
