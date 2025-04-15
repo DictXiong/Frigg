@@ -15,14 +15,16 @@ class CFClient:
         self.pusher = pusher
         try:
             zones = self.cf.zones.list(name=config["zone"])
-        except cloudflare.CloudflareError as e:
+        except cloudflare.APIError as e:
             self.logger.fatal("error: %s - api call failed", e)
+            exit(-1)
         zone = None
         for i in zones:
             if zone is not None:
                 self.logger.fatal(
                     "error: %s - api call returned >1 zones", config["zone"]
                 )
+                exit(-1)
             zone = i
         self.zone = zone
         self.zone_name = self.zone.name
@@ -74,7 +76,7 @@ class CFClient:
                     "proxied": False,
                     "comment": f'FRIGG {time.strftime("%Y-%m-%d %H:%M:%S")}',
                 }
-                self.cf.dns.records.create(self.zone_id, **dns_record)
+                self.cf.dns.records.create(zone_id=self.zone_id, **dns_record)
                 self.logger.info("record %s created with %s", name, ip)
                 if self.pusher:
                     self.pusher.push_dns_updated(name, ip)
@@ -86,7 +88,7 @@ class CFClient:
             self._aud_record(f"{name}.0.{self.zone_name}", ip4, ip6)
             self._aud_record(f"{name}.4.{self.zone_name}", ip4=ip4)
             self._aud_record(f"{name}.6.{self.zone_name}", ip6=ip6)
-        except cloudflare.CloudFlareError as e:
+        except cloudflare.APIError as e:
             self.logger.error("error: %s - api call failed", e)
             return False
         return True

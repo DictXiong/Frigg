@@ -183,4 +183,5 @@ def handle_exception(e):
     if isinstance(e, HTTPException):
         return f"{e.code} {e.name}", e.code
     pusher.push_internal_error(str(e))
+    logger.error("Uncaught error: %s", e)
     return api_return(500)
