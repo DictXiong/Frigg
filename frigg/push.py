@@ -28,11 +28,9 @@ class PushManager:
         except Exception as e:
             self.logger.error("pusher encountered an error: %s", e)
 
-    def push_dns_updated(self, hostname: str, ip: str, original_ip: str = None):
+    def push_dns_updated(self, hostname: str, ip4: str, ip4_before: str, ip6: str, ip6_before: str):
         text = f"## [Frigg.DDNS] {hostname} updated"
-        desp = f"**Content:** {ip}"
-        if original_ip:
-            desp += f"\n**Was:** {original_ip}"
+        desp = f"**IPv4:** {ip4} (was {ip4_before if ip4 != ip4_before else "the same"})\n**IPv6:** {ip6} (was {ip6_before if ip6 != ip6_before else "the same"})"
         try:
             if self.type == "pushdeer":
                 self.pusher.send_markdown(text, desp=desp)
