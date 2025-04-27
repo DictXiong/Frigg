@@ -78,7 +78,7 @@ def api_return(code: int, desc=None) -> str:
 
 
 def invalid_var_path(s: str):
-    return re.fullmatch(r"[a-z][-a-z/]*", s) is None
+    return re.fullmatch(r"[a-z][-a-z0-9/]*", s) is None
 
 
 def invalid_hostname(s: str):
@@ -110,6 +110,34 @@ def get_var(var_path):
     if ret is not None:
         return ret
     abort(404)
+
+
+@limiter.limit("60 per 10 minutes")
+@app.route("/post-var/<path:var_path>", methods=["POST"])
+def post_var(var_path):
+    if request.url.startswith("http://") and not app.debug:
+        return api_return(426)
+    if invalid_var_path(var_path):
+        abort(400)
+    hostname = request.args.get("hostname")
+    uuid = request.args.get("uuid")
+    value = str(request.data, encoding="utf8")
+    if invalid_hostname(hostname) or invalid_uuid(uuid) or len(value) > 512:
+        return api_return(400)
+    if not db.auth_host(hostname, uuid):
+        return api_return(403)
+    if var_path != hostname:  # now we only allow this
+        return api_reture(403)
+    if value == "":
+        if db.del_var(var_path):
+            return api_return(200)
+        else:
+            return api_return(400)
+    else:
+        if db.set_var(var_path, value):
+            return api_return(200)
+        else:
+            return api_return(500)
 
 
 @app.route("/get-my-ip")
