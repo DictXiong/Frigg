@@ -82,7 +82,7 @@ def invalid_var_path(s: str):
 
 
 def invalid_hostname(s: str):
-    return re.fullmatch(r"[a-z][-a-z0-9_]*", s) is None
+    return re.fullmatch(r"[a-z][-a-z0-9_.]*[a-z0-9]", s) is None
 
 
 def invalid_uuid(s: str):
