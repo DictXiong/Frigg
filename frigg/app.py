@@ -98,7 +98,7 @@ def invalid_beacon(s: str):
 
 @app.route("/")
 def hello_world():
-    return "<h1>Welcome to api.beardic.cn</h1>", 200
+    return "<h1>Welcome to api.dxng.cn (api.beardic.cn)</h1>", 200
 
 
 @app.route("/get-var/<path:var_path>")

@@ -1,8 +1,8 @@
 [project]
 name = "frigg"
 version = "1.0.0"
-description = "api.beardic.cn"
-authors = [{ name="Dict Xiong", email="me@beardic.cn" }]
+description = "api.dxng.cn"
+authors = [{ name="Dict Xiong", email="me@dxng.cn" }]
 requires-python = ">=3.7"
 dependencies = [
     "flask",
