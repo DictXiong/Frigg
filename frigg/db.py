@@ -40,7 +40,7 @@ class DBManager:
             )
         if "var" not in tables:
             cursor.execute(
-                "CREATE TABLE var (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(32), value VARCHAR(255))"
+                "CREATE TABLE var (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255), value VARCHAR(255))"
             )
 
     def set_host(self, name, uuid_str):
@@ -131,6 +131,13 @@ class DBManager:
         else:
             self.logger.error("Var %s not found", name)
             return False
+
+    def count_vars_by_prefix(self, hostname):
+        conn = self.get_conn()
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM var WHERE name = %s OR name LIKE %s", (hostname, hostname + "/%"))
+        ret = cursor.fetchone()
+        return ret[0] if ret else 0
 
     def list_vars(self):
         conn = self.get_conn()

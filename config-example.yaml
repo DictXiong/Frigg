@@ -14,3 +14,9 @@ db:
 # host=xxx.com
 # user=username
 # password=password
+var:
+  limits:
+    "*": 10
+    "special-*": 20
+    "*.example.com": 30
+    "unlimited-*": 0  # 0 means no limit

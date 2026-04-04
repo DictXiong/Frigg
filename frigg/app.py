@@ -4,6 +4,7 @@ import re
 import logging
 import argparse
 import ipaddress
+import fnmatch
 from flask import Flask, abort, request, jsonify
 from werkzeug.exceptions import HTTPException
 from flask_limiter import Limiter
@@ -115,6 +116,13 @@ def get_var(var_path):
 @limiter.limit("60 per 10 minutes")
 @app.route("/post-var/<path:var_path>", methods=["POST"])
 def post_var(var_path):
+    def get_var_limit(hostname: str) -> int:
+        var_config = config.get_config("var") if config.get_config("var") else {}
+        limits = var_config.get("limits", {})
+        for pattern, limit in limits.items():
+            if fnmatch.fnmatch(hostname, pattern):
+                return limit
+        return 32
     if request.url.startswith("http://") and not app.debug:
         return api_return(426)
     if invalid_var_path(var_path):
@@ -126,8 +134,22 @@ def post_var(var_path):
         return api_return(400)
     if not db.auth_host(hostname, uuid):
         return api_return(403)
-    if var_path != hostname:  # now we only allow this
-        return api_reture(403)
+    if var_path == hostname:
+        pass
+    elif var_path.startswith(hostname + "/"):
+        subpath = var_path[len(hostname) + 1:]
+        if not subpath or subpath.endswith("/") or "//" in subpath:
+            return api_return(400)
+    else:
+        return api_return(400)
+    if len(var_path) > 255:
+        return api_return(400, f"Var path too long ({len(var_path)} > 255)")
+
+    if value != "" and db.get_var(var_path) is None:
+        var_limit = get_var_limit(hostname)
+        if var_limit > 0 and db.count_vars_by_prefix(hostname) + 1 > var_limit:
+            return api_return(400, "Var limit exceeded")
+
     if value == "":
         if db.del_var(var_path):
             return api_return(200)

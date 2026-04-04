@@ -12,5 +12,5 @@ class ConfigManager:
         self.config = config
 
     def get_config(self, key):
-        assert key is not None and key in self.config
-        return self.config[key]
+        assert key is not None
+        return self.config.get(key)
