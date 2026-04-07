@@ -64,7 +64,11 @@ config = ConfigManager(args.config, logger)
 pusher = PushManager(config.get_config("push"), logger)
 data = DataManager(config.get_config("data"), logger, pusher)
 db = DBManager(config.get_config("db"), logger)
-cf = CFClient(config.get_config("ddns"), logger, pusher)
+try:
+    cf = CFClient(config.get_config("ddns"), logger, pusher)
+except Exception as e:
+    logger.fatal("Failed to initialize CFClient: %s", e)
+    cf = None
 
 
 def api_return(code: int, desc=None) -> str:
@@ -121,7 +125,10 @@ def post_var(var_path):
         limits = var_config.get("limits", {})
         for pattern, limit in limits.items():
             if fnmatch.fnmatch(hostname, pattern):
-                return limit
+                try:
+                    return int(limit)
+                except (ValueError, TypeError):
+                    logger.warning("Invalid limit value for pattern %s: %s", pattern, limit)
         return 32
     if request.url.startswith("http://") and not app.debug:
         return api_return(426)
@@ -129,8 +136,11 @@ def post_var(var_path):
         abort(400)
     hostname = request.args.get("hostname")
     uuid = request.args.get("uuid")
-    value = str(request.data, encoding="utf8")
-    if invalid_hostname(hostname) or invalid_uuid(uuid) or len(value) > 512:
+    try:
+        value = request.data.decode("utf-8")
+    except UnicodeDecodeError:
+        return api_return(400, "Invalid UTF-8 encoding")
+    if not hostname or not uuid or invalid_hostname(hostname) or invalid_uuid(uuid) or len(value) > 512:
         return api_return(400)
     if not db.auth_host(hostname, uuid):
         return api_return(403)
@@ -174,9 +184,14 @@ def get_my_ip():
 def post_beacon():
     hostname = request.args.get("hostname")
     beacon = request.args.get("beacon")
-    meta = str(request.data, encoding="utf8")
+    try:
+        meta = request.data.decode("utf-8")
+    except UnicodeDecodeError:
+        return api_return(400, "Invalid UTF-8 encoding")
     if (
-        invalid_hostname(hostname)
+        not hostname
+        or not beacon
+        or invalid_hostname(hostname)
         or invalid_beacon(beacon)
         or not data.write_beacon(hostname, beacon, meta, request.remote_addr)
     ):
@@ -189,9 +204,11 @@ def post_beacon():
 def update_dns():
     if request.url.startswith("http://") and not app.debug:
         return api_return(426)
+    if cf is None:
+        return api_return(500, "DDNS service unavailable")
     hostname = request.args.get("hostname")
     uuid = request.args.get("uuid")
-    if invalid_hostname(hostname) or invalid_uuid(uuid):
+    if not hostname or not uuid or invalid_hostname(hostname) or invalid_uuid(uuid):
         return api_return(400)
     if not db.auth_host(hostname, uuid):
         return api_return(403)

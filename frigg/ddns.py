@@ -3,6 +3,11 @@ import time
 import cloudflare
 
 
+class CFClientError(Exception):
+    """Cloudflare client initialization error."""
+    pass
+
+
 class CFClient:
     def __init__(self, config, logger, pusher):
         if "token_file" in config:
@@ -17,14 +22,14 @@ class CFClient:
             zones = self.cf.zones.list(name=config["zone"])
         except cloudflare.APIError as e:
             self.logger.fatal("error: %s - api call failed", e)
-            exit(-1)
+            raise CFClientError(f"Cloudflare API call failed: {e}")
         zone = None
         for i in zones:
             if zone is not None:
                 self.logger.fatal(
                     "error: %s - api call returned >1 zones", config["zone"]
                 )
-                exit(-1)
+                raise CFClientError(f"Multiple zones found for {config['zone']}")
             zone = i
         self.zone = zone
         self.zone_name = self.zone.name

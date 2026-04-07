@@ -16,8 +16,14 @@ class DBManager:
         if "secret_file" in config:
             with open(config["secret_file"], "r", encoding="utf-8") as f:
                 for line in f.readlines():
-                    key, value = line.rstrip("\n").split("=")
-                    assert key in ["host", "user", "password"]
+                    line = line.strip()
+                    if not line or line.startswith("#"):
+                        continue
+                    if "=" not in line:
+                        continue
+                    key, value = line.split("=", 1)
+                    if key not in ["host", "user", "password"]:
+                        raise ValueError(f"Invalid key in secret file: {key}")
                     config[key] = value
         self.init_db()
 
@@ -27,120 +33,194 @@ class DBManager:
             user=self.config["user"],
             password=self.config["password"],
             database="frigg",
+            connect_timeout=10,
+            charset="utf8mb4",
         )
 
     def init_db(self):
-        conn = self.get_conn()
-        cursor = conn.cursor()
-        cursor.execute("SHOW TABLES")
-        tables = [i[0] for i in cursor]
-        if "host" not in tables:
-            cursor.execute(
-                "CREATE TABLE host (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(32), shadow CHAR(64))"
-            )
-        if "var" not in tables:
-            cursor.execute(
-                "CREATE TABLE var (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255), value VARCHAR(255))"
-            )
+        conn = None
+        cursor = None
+        try:
+            conn = self.get_conn()
+            cursor = conn.cursor()
+            cursor.execute("SHOW TABLES")
+            tables = [i[0] for i in cursor]
+            if "host" not in tables:
+                cursor.execute(
+                    "CREATE TABLE host (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(32), shadow CHAR(64))"
+                )
+            if "var" not in tables:
+                cursor.execute(
+                    "CREATE TABLE var (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255), value VARCHAR(255))"
+                )
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
 
     def set_host(self, name, uuid_str):
-        conn = self.get_conn()
-        cursor = conn.cursor()
+        conn = None
+        cursor = None
         try:
-            raw = uuid.UUID(uuid_str).bytes
-        except Exception:
-            self.logger.error("Invalid UUID: %s", uuid_str)
-            return False
-        shadow = hashlib.pbkdf2_hmac("sha256", raw, SALT, ITERATIONS).hex()
-        cursor.execute("SELECT * FROM host WHERE name = %s", (name,))
-        ret = cursor.fetchone()
-        if ret:
-            if ret[2] == shadow:
-                self.logger.info("Host %s not changed", name)
+            conn = self.get_conn()
+            cursor = conn.cursor()
+            try:
+                raw = uuid.UUID(uuid_str).bytes
+            except Exception:
+                self.logger.error("Invalid UUID: %s", uuid_str)
+                return False
+            shadow = hashlib.pbkdf2_hmac("sha256", raw, SALT, ITERATIONS).hex()
+            cursor.execute("SELECT * FROM host WHERE name = %s", (name,))
+            ret = cursor.fetchone()
+            if ret:
+                if ret[2] == shadow:
+                    self.logger.info("Host %s not changed", name)
+                else:
+                    cursor.execute(
+                        "UPDATE host SET shadow = %s WHERE name = %s", (shadow, name)
+                    )
+                    self.logger.info("Host %s updated", name)
             else:
                 cursor.execute(
-                    "UPDATE host SET shadow = %s WHERE name = %s", (shadow, name)
+                    "INSERT INTO host (name, shadow) VALUES (%s, %s)", (name, shadow)
                 )
-                self.logger.info("Host %s updated", name)
-        else:
-            cursor.execute(
-                "INSERT INTO host (name, shadow) VALUES (%s, %s)", (name, shadow)
-            )
-            self.logger.info("Host %s added", name)
-        conn.commit()
-        return True
+                self.logger.info("Host %s added", name)
+            conn.commit()
+            return True
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
 
     def list_hosts(self):
-        conn = self.get_conn()
-        cursor = conn.cursor()
-        cursor.execute("SELECT name,shadow FROM host")
-        return [(i[0], i[1]) for i in cursor.fetchall()]
+        conn = None
+        cursor = None
+        try:
+            conn = self.get_conn()
+            cursor = conn.cursor()
+            cursor.execute("SELECT name,shadow FROM host")
+            return [(i[0], i[1]) for i in cursor.fetchall()]
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
 
     def auth_host(self, name, uuid_str):
-        conn = self.get_conn()
-        cursor = conn.cursor()
+        conn = None
+        cursor = None
         try:
-            raw = uuid.UUID(uuid_str).bytes
-        except Exception:
-            self.logger.warning("Invalid UUID: %s", uuid_str)
+            conn = self.get_conn()
+            cursor = conn.cursor()
+            try:
+                raw = uuid.UUID(uuid_str).bytes
+            except Exception:
+                self.logger.warning("Invalid UUID: %s", uuid_str)
+                return False
+            shadow = hashlib.pbkdf2_hmac("sha256", raw, SALT, ITERATIONS).hex()
+            cursor.execute(
+                "SELECT * FROM host WHERE name = %s AND shadow = %s", (name, shadow)
+            )
+            ret = cursor.fetchone()
+            if ret:
+                return True
             return False
-        shadow = hashlib.pbkdf2_hmac("sha256", raw, SALT, ITERATIONS).hex()
-        cursor.execute(
-            "SELECT * FROM host WHERE name = %s AND shadow = %s", (name, shadow)
-        )
-        ret = cursor.fetchone()
-        if ret:
-            return True
-        return False
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
 
     def set_var(self, name, value):
-        conn = self.get_conn()
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM var WHERE name = %s", (name,))
-        ret = cursor.fetchone()
-        if ret:
-            cursor.execute("UPDATE var SET value = %s WHERE name = %s", (value, name))
-            self.logger.info("Var %s updated", name)
-        else:
-            cursor.execute(
-                "INSERT INTO var (name, value) VALUES (%s, %s)", (name, value)
-            )
-            self.logger.info("Var %s added", name)
-        conn.commit()
-        return True
+        conn = None
+        cursor = None
+        try:
+            conn = self.get_conn()
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM var WHERE name = %s", (name,))
+            ret = cursor.fetchone()
+            if ret:
+                cursor.execute("UPDATE var SET value = %s WHERE name = %s", (value, name))
+                self.logger.info("Var %s updated", name)
+            else:
+                cursor.execute(
+                    "INSERT INTO var (name, value) VALUES (%s, %s)", (name, value)
+                )
+                self.logger.info("Var %s added", name)
+            conn.commit()
+            return True
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
 
     def get_var(self, name):
-        conn = self.get_conn()
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM var WHERE name = %s", (name,))
-        ret = cursor.fetchone()
-        if ret:
-            return ret[2]
-        return None
+        conn = None
+        cursor = None
+        try:
+            conn = self.get_conn()
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM var WHERE name = %s", (name,))
+            ret = cursor.fetchone()
+            if ret:
+                return ret[2]
+            return None
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
 
     def del_var(self, name):
-        conn = self.get_conn()
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM var WHERE name = %s", (name,))
-        ret = cursor.fetchone()
-        if ret:
-            cursor.execute("DELETE FROM var WHERE name = %s", (name,))
-            conn.commit()
-            self.logger.info("Var %s deleted", name)
-            return True
-        else:
-            self.logger.error("Var %s not found", name)
-            return False
+        conn = None
+        cursor = None
+        try:
+            conn = self.get_conn()
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM var WHERE name = %s", (name,))
+            ret = cursor.fetchone()
+            if ret:
+                cursor.execute("DELETE FROM var WHERE name = %s", (name,))
+                conn.commit()
+                self.logger.info("Var %s deleted", name)
+                return True
+            else:
+                self.logger.error("Var %s not found", name)
+                return False
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
 
     def count_vars_by_prefix(self, hostname):
-        conn = self.get_conn()
-        cursor = conn.cursor()
-        cursor.execute("SELECT COUNT(*) FROM var WHERE name = %s OR name LIKE %s", (hostname, hostname + "/%"))
-        ret = cursor.fetchone()
-        return ret[0] if ret else 0
+        conn = None
+        cursor = None
+        try:
+            conn = self.get_conn()
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) FROM var WHERE name = %s OR name LIKE %s", (hostname, hostname + "/%"))
+            ret = cursor.fetchone()
+            return ret[0] if ret else 0
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
 
     def list_vars(self):
-        conn = self.get_conn()
-        cursor = conn.cursor()
-        cursor.execute("SELECT name,value FROM var")
-        return [(i[0], i[1]) for i in cursor.fetchall()]
+        conn = None
+        cursor = None
+        try:
+            conn = self.get_conn()
+            cursor = conn.cursor()
+            cursor.execute("SELECT name,value FROM var")
+            return [(i[0], i[1]) for i in cursor.fetchall()]
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()

@@ -8,7 +8,7 @@ class ConfigManager:
         if not os.path.exists(config_path):
             raise FileNotFoundError(f"{config_path} not found")
         with open(config_path, "r", encoding="utf-8") as f:
-            config = yaml.full_load(f)
+            config = yaml.safe_load(f)
         self.config = config
 
     def get_config(self, key):

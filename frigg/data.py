@@ -11,7 +11,7 @@ class DataManager:
     def __init__(self, config, logger, pusher) -> None:
         self.logger = logger
         self.pusher = pusher
-        self.config = config
+        self.config = config or {}
 
         # beacon logger
         beacon_logger = logging.getLogger("beacon")
@@ -24,7 +24,8 @@ class DataManager:
         self.beacon_logger = beacon_logger
 
     def write_beacon(self, hostname: str, beacon: str, meta: str, ip: str):
-        if beacon not in self.config["beacon"] or len(hostname) > 32:
+        beacon_config = self.config.get("beacon", {})
+        if beacon not in beacon_config or len(hostname) > 32:
             return False
         if meta:
             if len(meta) > 512:
@@ -32,6 +33,6 @@ class DataManager:
             self.beacon_logger.info('[%s]::%s "%s" (%s)', hostname, beacon, meta, ip)
         else:
             self.beacon_logger.info("[%s]::%s (%s)", hostname, beacon, ip)
-        if self.pusher and self.config["beacon"][beacon]:
+        if self.pusher and beacon_config.get(beacon):
             self.pusher.push_beacon(hostname=hostname, beacon=beacon, meta=meta, ip=ip)
         return True
